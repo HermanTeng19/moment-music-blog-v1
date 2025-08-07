@@ -1,0 +1,9 @@
+{
+  "id": "song-003",
+  "title": "城市之夜",
+  "artist": "都市节奏",
+  "audioSrc": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=3", 
+  "backgroundSrc": "https://picsum.photos/1920/1080?random=3",
+  "lyricsSrc": "assets/lyrics/song-003.txt"
+}

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moment Music Blog - 纯静态音乐播放器</title>
+    <meta name="description" content="基于文件系统的纯静态音乐播放器，支持播放列表管理、歌词显示和响应式设计">
+    <meta name="keywords" content="音乐播放器,静态网页,播放列表,歌词显示">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Favicon 配置 -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    <meta name="theme-color" content="#6366f1">
+    
+    <!-- Preconnect for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- 主播放器容器 -->
+    <div id="player-container" class="relative min-h-screen w-full flex flex-col bg-cover bg-center transition-opacity duration-1000" style="background-image: url('https://picsum.photos/1920/1080');">
+        <div id="player-content" class="w-full h-full flex flex-col">
+            <!-- 歌曲信息区域 -->
+            <div class="w-full max-w-2xl mx-auto text-center px-6 sm:px-8 pt-12">
+                <h1 id="song-title" class="text-3xl font-bold tracking-wider">正在加载...</h1>
+                <p id="song-artist" class="text-lg text-gray-300 mt-1">请稍候</p>
+            </div>
+            
+            <!-- 歌词容器 -->
+            <div id="lyrics-container">
+                <div id="lyrics-content" class="lyrics-content">
+                    <!-- 歌词内容将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            
+            <!-- 弹性填充区域 -->
+            <div class="flex-grow"></div>
+        </div>
+    </div>
+    
+    <!-- 播放列表弹窗 -->
+    <div id="playlist-overlay">
+        <div id="playlist-content">
+            <h2 class="text-2xl font-bold mb-6">播放列表</h2>
+            <div id="playlist-container">
+                <!-- 播放列表项将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        <button class="close-btn" id="close-playlist-btn" title="关闭播放列表">×</button>
+    </div>
+    
+    <!-- 播放控制区域 -->
+    <div class="controls-container">
+        <!-- 进度条区域 -->
+        <div class="w-full mb-6 px-6 sm:px-8">
+            <div class="progress-bar-container">
+                <div id="progress-fill"></div>
+                <input id="progress-bar" type="range" value="0" min="0" max="100" 
+                       class="w-full h-1 cursor-pointer" title="拖拽调整播放进度">
+            </div>
+            <div class="flex justify-between text-xs text-gray-300 mt-2">
+                <span id="current-time">0:00</span>
+                <span id="total-duration">0:00</span>
+            </div>
+        </div>
+
+        <!-- 控制按钮区域 -->
+        <div class="flex items-center justify-between w-full px-6 sm:px-8 relative">
+            <!-- 左侧功能按钮 -->
+            <div class="flex items-center space-x-6 absolute left-8">
+                <button id="playlist-btn" class="text-white hover:text-gray-300 transition-colors" 
+                        title="显示播放列表 (P)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                </button>
+                <button id="lyrics-btn" class="text-white hover:text-gray-300 transition-colors" 
+                        title="显示/隐藏歌词 (L)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 中间播放控制按钮 -->
+            <div class="flex items-center space-x-6 mx-auto">
+                <button id="prev-btn" class="text-white hover:text-gray-300 transition-colors" 
+                        title="上一首 (←)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8.445 14.832A1 1 0 0010 14.03V5.969a1 1 0 00-1.555-.832L4.12 9.168a1 1 0 000 1.664l4.325 4.001zM14.445 14.832A1 1 0 0016 14.03V5.969a1 1 0 00-1.555-.832L10.12 9.168a1 1 0 000 1.664l4.325 4.001z"/>
+                    </svg>
+                </button>
+                <button id="play-pause-btn" class="bg-white text-gray-900 rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:scale-105 transition-transform" 
+                        title="播放/暂停 (空格)">
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.002v3.996a1 1 0 001.555.832l3.198-1.998a1 1 0 000-1.664l-3.198-1.998z" clip-rule="evenodd" />
+                    </svg>
+                    <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button id="next-btn" class="text-white hover:text-gray-300 transition-colors" 
+                        title="下一首 (→)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5.555 5.168A1 1 0 004 5.97v8.06a1 1 0 001.555.832l4.325-4.03a1 1 0 000-1.664L5.555 5.168zM11.555 5.168A1 1 0 0010 5.97v8.06a1 1 0 001.555.832l4.325-4.03a1 1 0 000-1.664l-4.325-4.03z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 右侧功能按钮 -->
+            <div class="flex items-center space-x-6 absolute right-8">
+                <button class="text-white hover:text-gray-300 transition-colors" title="设置">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6.598 4.098l-2.122-2.122M4 12H2m15.098-6.598l-2.122 2.122M12 20v-1m-6.598-4.098l2.122-2.122M4 12a8 8 0 018-8v0a8 8 0 018 8v0a8 8 0 01-8 8v0a8 8 0 01-8-8v0z" />
+                    </svg>
+                </button>
+                <div class="volume-container">
+                    <button id="volume-btn" class="text-white hover:text-gray-300 transition-colors" title="静音/取消静音">
+                        <svg id="volume-high-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.108 12 5v14c0 .892-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                        <svg id="volume-mute-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.108 12 5v14c0 .892-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                    </button>
+                    <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.7" 
+                           class="h-1 cursor-pointer" title="调整音量">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="audio-player" preload="metadata">
+        您的浏览器不支持音频播放功能。
+    </audio>
+
+    <!-- 加载指示器 -->
+    <div id="loading-indicator" class="fixed top-4 right-4 z-30 hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- JavaScript模块 -->
+    <script src="js/data-manager.js"></script>
+    <script src="js/player.js"></script>
+
+    <!-- 页面加载完成提示 -->
+    <script>
+        console.log('Moment Music Player v1.0 - 纯静态音乐播放器');
+        console.log('快捷键：空格=播放/暂停, ←=上一首, →=下一首, L=歌词, P=播放列表');
+    </script>
+</body>
+</html>

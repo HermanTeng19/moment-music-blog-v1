@@ -1,0 +1,9 @@
+{
+  "id": "song-005",
+  "title": "Whenever, Wherever",
+  "artist": "Shakira",
+  "audioSrc": "assets/audio/Whenever-Wherever.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=3", 
+  "backgroundSrc": "assets/images/backgrounds/whenever-wherever.jpg",
+  "lyricsSrc": "assets/lyrics/whenever-wherever.txt"
+}

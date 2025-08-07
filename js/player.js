@@ -1,0 +1,891 @@
+/**
+ * 音乐播放器核心逻辑
+ */
+class MusicPlayer {
+    constructor() {
+        this.initializeElements();
+        this.initializeState();
+        this.bindEvents();
+    }
+
+    initializeElements() {
+        // 音频元素
+        this.audioPlayer = document.getElementById('audio-player');
+        
+        // 播放控制
+        this.playPauseBtn = document.getElementById('play-pause-btn');
+        this.playIcon = document.getElementById('play-icon');
+        this.pauseIcon = document.getElementById('pause-icon');
+        this.prevBtn = document.getElementById('prev-btn');
+        this.nextBtn = document.getElementById('next-btn');
+        
+        // 进度控制
+        this.progressBar = document.getElementById('progress-bar');
+        this.progressFill = document.getElementById('progress-fill');
+        this.currentTimeEl = document.getElementById('current-time');
+        this.totalDurationEl = document.getElementById('total-duration');
+        
+        // 歌曲信息
+        this.songTitleEl = document.getElementById('song-title');
+        this.songArtistEl = document.getElementById('song-artist');
+        this.playerContainer = document.getElementById('player-container');
+        
+        // 音量控制
+        this.volumeBtn = document.getElementById('volume-btn');
+        this.volumeSlider = document.getElementById('volume-slider');
+        this.volumeHighIcon = document.getElementById('volume-high-icon');
+        this.volumeMuteIcon = document.getElementById('volume-mute-icon');
+        
+        // 歌词和播放列表
+        this.lyricsBtn = document.getElementById('lyrics-btn');
+        this.lyricsContainer = document.getElementById('lyrics-container');
+        this.lyricsContent = document.getElementById('lyrics-content');
+        this.playlistBtn = document.getElementById('playlist-btn');
+        this.playlistOverlay = document.getElementById('playlist-overlay');
+        this.playlistContainer = document.getElementById('playlist-container');
+        this.closePlaylistBtn = document.getElementById('close-playlist-btn');
+    }
+
+    initializeState() {
+        this.isPlaying = false;
+        this.currentSongIndex = 0;
+        this.lastVolume = 0.7;
+        this.areLyricsVisible = false;
+        this.playlist = [];
+        this.isInitialized = false;
+        
+        // 播放模式设置
+        this.playMode = 'sequential'; // 'sequential', 'shuffle', 'repeat-one', 'repeat-all'
+        this.shuffleHistory = [];
+        this.userPreferences = this.loadUserPreferences();
+        
+        // 设置初始音量
+        this.audioPlayer.volume = 0.7;
+        this.volumeSlider.value = 0.7;
+    }
+
+    bindEvents() {
+        // 播放控制事件
+        this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+        this.prevBtn.addEventListener('click', () => this.prevSong());
+        this.nextBtn.addEventListener('click', () => this.nextSong());
+        
+        // 音频事件
+        this.audioPlayer.addEventListener('timeupdate', () => this.updateProgress());
+        this.audioPlayer.addEventListener('loadedmetadata', () => this.updateDuration());
+        this.audioPlayer.addEventListener('ended', () => this.handleSongEnd());
+        this.audioPlayer.addEventListener('error', (e) => this.handleAudioError(e));
+        
+        // 进度条事件
+        this.progressBar.addEventListener('input', (e) => this.setProgress(e));
+        
+        // 音量控制事件
+        this.volumeBtn.addEventListener('click', () => this.toggleMute());
+        this.volumeSlider.addEventListener('input', (e) => this.setVolume(e));
+        
+        // 歌词和播放列表事件
+        this.lyricsBtn.addEventListener('click', () => this.toggleLyrics());
+        this.playlistBtn.addEventListener('click', () => this.togglePlaylist());
+        this.closePlaylistBtn.addEventListener('click', () => this.togglePlaylist());
+        
+        // 播放模式切换事件
+        this.bindPlayModeEvents();
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+    }
+
+    /**
+     * 初始化播放器，加载数据
+     */
+    async initialize() {
+        try {
+            this.showLoading(true);
+            
+            // 确保数据管理器已初始化
+            if (!window.dataManager.isReady()) {
+                const success = await window.dataManager.initialize();
+                if (!success) {
+                    throw new Error('数据管理器初始化失败');
+                }
+            }
+            
+            // 加载播放列表
+            this.playlist = window.dataManager.getAllSongs();
+            
+            if (this.playlist.length === 0) {
+                throw new Error('播放列表为空');
+            }
+            
+            // 加载第一首歌曲
+            await this.loadSong(0);
+            
+            // 渲染播放列表
+            this.renderPlaylist();
+            
+            this.isInitialized = true;
+            this.showLoading(false);
+            
+            console.log('播放器初始化完成，共加载', this.playlist.length, '首歌曲');
+            
+        } catch (error) {
+            console.error('播放器初始化失败:', error);
+            this.showError('播放器初始化失败: ' + error.message);
+            this.showLoading(false);
+        }
+    }
+
+    /**
+     * 加载指定歌曲
+     */
+    async loadSong(index) {
+        if (index < 0 || index >= this.playlist.length) {
+            console.warn('歌曲索引超出范围:', index);
+            return;
+        }
+
+        this.currentSongIndex = index;
+        const song = this.playlist[index];
+        
+        try {
+            // 更新音频源
+            this.audioPlayer.src = song.audioSrc;
+            
+            // 更新歌曲信息
+            this.songTitleEl.textContent = song.title;
+            this.songArtistEl.textContent = song.artist;
+            
+            // 更新背景图片
+            this.changeBackground(song.imageSrc);
+            
+            // 更新歌词
+            this.lyricsContent.textContent = song.lyrics || '暂无歌词';
+            
+            // 尝试自动播放（如果用户已经与页面交互过）
+            if (this.isPlaying) {
+                try {
+                    await this.audioPlayer.play();
+                    this.updatePlayButton(true);
+                } catch (error) {
+                    console.log('自动播放失败，需要用户交互:', error);
+                    this.updatePlayButton(false);
+                    this.isPlaying = false;
+                }
+            }
+            
+            // 更新播放列表显示
+            this.updatePlaylistDisplay();
+            
+            console.log('歌曲加载完成:', song.title);
+            
+        } catch (error) {
+            console.error('加载歌曲失败:', error);
+            this.showError('加载歌曲失败: ' + error.message);
+        }
+    }
+
+    /**
+     * 播放音频
+     */
+    async playAudio() {
+        try {
+            await this.audioPlayer.play();
+            this.isPlaying = true;
+            this.updatePlayButton(true);
+        } catch (error) {
+            console.error('播放失败:', error);
+            this.showError('播放失败，请检查音频文件');
+        }
+    }
+
+    /**
+     * 暂停音频
+     */
+    pauseAudio() {
+        this.audioPlayer.pause();
+        this.isPlaying = false;
+        this.updatePlayButton(false);
+    }
+
+    /**
+     * 切换播放/暂停
+     */
+    togglePlayPause() {
+        if (!this.isInitialized) {
+            console.warn('播放器尚未初始化');
+            return;
+        }
+
+        if (this.isPlaying) {
+            this.pauseAudio();
+        } else {
+            this.playAudio();
+        }
+    }
+
+    /**
+     * 上一首
+     */
+    prevSong() {
+        if (!this.isInitialized) return;
+        
+        const newIndex = (this.currentSongIndex - 1 + this.playlist.length) % this.playlist.length;
+        this.loadSong(newIndex);
+    }
+
+    /**
+     * 下一首
+     */
+    nextSong() {
+        if (!this.isInitialized) return;
+        
+        const newIndex = (this.currentSongIndex + 1) % this.playlist.length;
+        this.loadSong(newIndex);
+    }
+
+    /**
+     * 更新播放进度
+     */
+    updateProgress() {
+        if (this.audioPlayer.duration) {
+            const progressPercent = (this.audioPlayer.currentTime / this.audioPlayer.duration) * 100;
+            this.progressBar.value = progressPercent;
+            this.progressFill.style.width = `${progressPercent}%`;
+            this.currentTimeEl.textContent = this.formatTime(this.audioPlayer.currentTime);
+        }
+    }
+
+    /**
+     * 设置播放进度
+     */
+    setProgress(e) {
+        if (this.audioPlayer.duration) {
+            const newTime = (e.target.value / 100) * this.audioPlayer.duration;
+            this.audioPlayer.currentTime = newTime;
+        }
+    }
+
+    /**
+     * 更新总时长显示
+     */
+    updateDuration() {
+        if (this.audioPlayer.duration) {
+            this.totalDurationEl.textContent = this.formatTime(this.audioPlayer.duration);
+        }
+    }
+
+    /**
+     * 切换静音
+     */
+    toggleMute() {
+        if (this.audioPlayer.volume > 0) {
+            this.lastVolume = this.audioPlayer.volume;
+            this.audioPlayer.volume = 0;
+            this.volumeSlider.value = 0;
+            this.updateVolumeIcon(false);
+        } else {
+            this.audioPlayer.volume = this.lastVolume;
+            this.volumeSlider.value = this.lastVolume;
+            this.updateVolumeIcon(true);
+        }
+    }
+
+    /**
+     * 设置音量
+     */
+    setVolume(e) {
+        this.audioPlayer.volume = e.target.value;
+        this.updateVolumeIcon(this.audioPlayer.volume > 0);
+    }
+
+    /**
+     * 切换歌词显示
+     */
+    toggleLyrics() {
+        this.areLyricsVisible = !this.areLyricsVisible;
+        this.lyricsContainer.classList.toggle('active');
+    }
+
+    /**
+     * 切换播放列表显示
+     */
+    togglePlaylist() {
+        this.playlistOverlay.classList.toggle('active');
+    }
+
+    /**
+     * 渲染播放列表
+     */
+    renderPlaylist() {
+        this.playlistContainer.innerHTML = '';
+        
+        this.playlist.forEach((song, index) => {
+            const songElement = document.createElement('div');
+            songElement.className = `playlist-item ${index === this.currentSongIndex ? 'active' : ''}`;
+            songElement.innerHTML = `
+                <div class="song-info">
+                    <div class="song-title">${song.title}</div>
+                    <div class="song-artist">${song.artist}</div>
+                </div>
+            `;
+            songElement.addEventListener('click', () => {
+                this.loadSong(index);
+                this.togglePlaylist();
+            });
+            this.playlistContainer.appendChild(songElement);
+        });
+    }
+
+    /**
+     * 更新播放列表显示
+     */
+    updatePlaylistDisplay() {
+        const items = this.playlistContainer.querySelectorAll('.playlist-item');
+        items.forEach((item, index) => {
+            item.classList.toggle('active', index === this.currentSongIndex);
+        });
+    }
+
+    /**
+     * 更新播放按钮状态
+     */
+    updatePlayButton(isPlaying) {
+        if (isPlaying) {
+            this.playIcon.classList.add('hidden');
+            this.pauseIcon.classList.remove('hidden');
+        } else {
+            this.playIcon.classList.remove('hidden');
+            this.pauseIcon.classList.add('hidden');
+        }
+    }
+
+    /**
+     * 更新音量图标
+     */
+    updateVolumeIcon(hasVolume) {
+        if (hasVolume) {
+            this.volumeHighIcon.classList.remove('hidden');
+            this.volumeMuteIcon.classList.add('hidden');
+        } else {
+            this.volumeHighIcon.classList.add('hidden');
+            this.volumeMuteIcon.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * 更换背景图片
+     */
+    changeBackground(imageUrl) {
+        if (!imageUrl) return;
+        
+        const tempImg = new Image();
+        tempImg.src = imageUrl;
+        tempImg.onload = () => {
+            this.playerContainer.style.opacity = '0';
+            setTimeout(() => {
+                this.playerContainer.style.backgroundImage = `url('${imageUrl}')`;
+                this.playerContainer.style.opacity = '1';
+            }, 500);
+        };
+        tempImg.onerror = () => {
+            console.warn('背景图片加载失败:', imageUrl);
+        };
+    }
+
+    /**
+     * 处理歌曲结束
+     */
+    handleSongEnd() {
+        console.log('歌曲播放结束，准备播放下一首');
+        
+        // 记录用户偏好
+        this.recordUserPreference(this.currentSongIndex);
+        
+        // 根据播放模式决定下一首
+        const nextIndex = this.getNextSongIndex();
+        
+        if (nextIndex !== null) {
+            this.loadSong(nextIndex);
+            // 自动播放下一首
+            setTimeout(() => {
+                this.playAudio();
+            }, 100);
+        } else {
+            // 播放列表结束
+            this.pauseAudio();
+            this.audioPlayer.currentTime = 0;
+            this.showPlaylistEndMessage();
+        }
+    }
+
+    /**
+     * 处理音频错误
+     */
+    handleAudioError(e) {
+        console.error('音频播放错误:', e);
+        this.showError('音频播放出错，请检查文件路径');
+        this.pauseAudio();
+    }
+
+    /**
+     * 处理键盘快捷键
+     */
+    handleKeyboard(e) {
+        if (!this.isInitialized) return;
+        
+        switch (e.code) {
+            case 'Space':
+                e.preventDefault();
+                this.togglePlayPause();
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                this.prevSong();
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                this.nextSong();
+                break;
+            case 'KeyL':
+                e.preventDefault();
+                this.toggleLyrics();
+                break;
+            case 'KeyP':
+                e.preventDefault();
+                this.togglePlaylist();
+                break;
+            case 'KeyM':
+                e.preventDefault();
+                this.cyclePlayMode();
+                break;
+            case 'KeyR':
+                e.preventDefault();
+                this.toggleRepeatMode();
+                break;
+        }
+    }
+
+    /**
+     * 格式化时间
+     */
+    formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    /**
+     * 显示加载状态
+     */
+    showLoading(show) {
+        document.body.classList.toggle('loading', show);
+    }
+
+    /**
+     * 显示错误信息
+     */
+    showError(message) {
+        // 创建错误提示元素
+        const errorEl = document.createElement('div');
+        errorEl.className = 'error-message';
+        errorEl.textContent = message;
+        
+        // 添加到页面
+        document.body.appendChild(errorEl);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            if (errorEl.parentNode) {
+                errorEl.parentNode.removeChild(errorEl);
+            }
+        }, 3000);
+    }
+
+    /**
+     * 绑定播放模式切换事件
+     */
+    bindPlayModeEvents() {
+        // 查找播放模式按钮（如果存在）
+        const modeButtons = document.querySelectorAll('[data-play-mode]');
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.playMode;
+                this.setPlayMode(mode);
+            });
+        });
+    }
+
+    /**
+     * 设置播放模式
+     */
+    setPlayMode(mode) {
+        const validModes = ['sequential', 'shuffle', 'repeat-one', 'repeat-all'];
+        if (!validModes.includes(mode)) {
+            console.warn('无效的播放模式:', mode);
+            return;
+        }
+
+        this.playMode = mode;
+        this.updatePlayModeUI();
+        this.saveUserPreferences();
+        
+        console.log('播放模式已切换为:', this.getPlayModeDisplayName(mode));
+    }
+
+    /**
+     * 获取播放模式显示名称
+     */
+    getPlayModeDisplayName(mode) {
+        const modeNames = {
+            'sequential': '顺序播放',
+            'shuffle': '随机播放',
+            'repeat-one': '单曲循环',
+            'repeat-all': '列表循环'
+        };
+        return modeNames[mode] || mode;
+    }
+
+    /**
+     * 更新播放模式UI
+     */
+    updatePlayModeUI() {
+        // 移除所有模式按钮的active状态
+        const modeButtons = document.querySelectorAll('[data-play-mode]');
+        modeButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.playMode === this.playMode) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    /**
+     * 获取下一首歌曲索引
+     */
+    getNextSongIndex() {
+        if (this.playlist.length === 0) return null;
+
+        switch (this.playMode) {
+            case 'sequential':
+                return this.getNextSequentialIndex();
+            case 'shuffle':
+                return this.getNextShuffleIndex();
+            case 'repeat-one':
+                return this.currentSongIndex; // 重复当前歌曲
+            case 'repeat-all':
+                return this.getNextRepeatAllIndex();
+            default:
+                return this.getNextSequentialIndex();
+        }
+    }
+
+    /**
+     * 顺序播放模式 - 获取下一首索引
+     */
+    getNextSequentialIndex() {
+        const nextIndex = this.currentSongIndex + 1;
+        return nextIndex < this.playlist.length ? nextIndex : null;
+    }
+
+    /**
+     * 随机播放模式 - 获取下一首索引
+     */
+    getNextShuffleIndex() {
+        if (this.playlist.length <= 1) return this.currentSongIndex;
+
+        // 避免连续播放同一首歌
+        let nextIndex;
+        do {
+            nextIndex = Math.floor(Math.random() * this.playlist.length);
+        } while (nextIndex === this.currentSongIndex && this.playlist.length > 1);
+
+        // 记录随机播放历史
+        this.shuffleHistory.push(nextIndex);
+        if (this.shuffleHistory.length > 10) {
+            this.shuffleHistory.shift();
+        }
+
+        return nextIndex;
+    }
+
+    /**
+     * 列表循环模式 - 获取下一首索引
+     */
+    getNextRepeatAllIndex() {
+        const nextIndex = this.currentSongIndex + 1;
+        return nextIndex < this.playlist.length ? nextIndex : 0; // 循环到第一首
+    }
+
+    /**
+     * 智能推荐下一首歌曲
+     */
+    getRecommendedNextSong() {
+        if (this.playlist.length <= 1) return this.currentSongIndex;
+
+        // 基于用户偏好的推荐算法
+        const recommendations = this.calculateRecommendations();
+        
+        // 根据播放模式调整推荐
+        if (this.playMode === 'shuffle') {
+            // 随机播放时，增加推荐权重
+            return this.selectFromRecommendations(recommendations, 0.7);
+        } else {
+            // 顺序播放时，保持顺序但考虑推荐
+            return this.selectFromRecommendations(recommendations, 0.3);
+        }
+    }
+
+    /**
+     * 计算歌曲推荐分数
+     */
+    calculateRecommendations() {
+        const recommendations = [];
+        
+        this.playlist.forEach((song, index) => {
+            if (index === this.currentSongIndex) {
+                recommendations.push({ index, score: 0 }); // 当前歌曲不推荐
+                return;
+            }
+
+            let score = 0;
+            
+            // 基于用户偏好评分
+            const preference = this.userPreferences[index] || 0;
+            score += preference * 0.4;
+            
+            // 基于播放频率评分
+            const playCount = this.userPreferences[`playCount_${index}`] || 0;
+            score += Math.min(playCount * 0.1, 0.3); // 最高0.3分
+            
+            // 基于相似度评分（如果有标签信息）
+            if (song.tags && this.playlist[this.currentSongIndex].tags) {
+                const similarity = this.calculateTagSimilarity(
+                    song.tags, 
+                    this.playlist[this.currentSongIndex].tags
+                );
+                score += similarity * 0.2;
+            }
+            
+            // 基于艺术家相似度
+            if (song.artist === this.playlist[this.currentSongIndex].artist) {
+                score += 0.1;
+            }
+            
+            recommendations.push({ index, score });
+        });
+        
+        // 按分数排序
+        recommendations.sort((a, b) => b.score - a.score);
+        return recommendations;
+    }
+
+    /**
+     * 从推荐列表中选择歌曲
+     */
+    selectFromRecommendations(recommendations, recommendationWeight) {
+        if (Math.random() < recommendationWeight && recommendations.length > 0) {
+            // 使用推荐
+            const topRecommendations = recommendations.slice(0, 3);
+            const randomIndex = Math.floor(Math.random() * topRecommendations.length);
+            return topRecommendations[randomIndex].index;
+        } else {
+            // 使用默认逻辑
+            return this.getNextSongIndex();
+        }
+    }
+
+    /**
+     * 计算标签相似度
+     */
+    calculateTagSimilarity(tags1, tags2) {
+        if (!tags1 || !tags2 || tags1.length === 0 || tags2.length === 0) {
+            return 0;
+        }
+        
+        const set1 = new Set(tags1.map(tag => tag.toLowerCase()));
+        const set2 = new Set(tags2.map(tag => tag.toLowerCase()));
+        
+        const intersection = new Set([...set1].filter(x => set2.has(x)));
+        const union = new Set([...set1, ...set2]);
+        
+        return intersection.size / union.size;
+    }
+
+    /**
+     * 记录用户偏好
+     */
+    recordUserPreference(songIndex) {
+        if (!this.userPreferences[songIndex]) {
+            this.userPreferences[songIndex] = 0;
+        }
+        
+        // 增加偏好分数
+        this.userPreferences[songIndex] += 1;
+        
+        // 记录播放次数
+        const playCountKey = `playCount_${songIndex}`;
+        this.userPreferences[playCountKey] = (this.userPreferences[playCountKey] || 0) + 1;
+        
+        // 保存偏好
+        this.saveUserPreferences();
+    }
+
+    /**
+     * 加载用户偏好
+     */
+    loadUserPreferences() {
+        try {
+            const saved = localStorage.getItem('musicPlayer_preferences');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.warn('加载用户偏好失败:', error);
+            return {};
+        }
+    }
+
+    /**
+     * 保存用户偏好
+     */
+    saveUserPreferences() {
+        try {
+            localStorage.setItem('musicPlayer_preferences', JSON.stringify(this.userPreferences));
+        } catch (error) {
+            console.warn('保存用户偏好失败:', error);
+        }
+    }
+
+    /**
+     * 显示播放列表结束消息
+     */
+    showPlaylistEndMessage() {
+        const message = this.playMode === 'repeat-all' ? 
+            '播放列表已循环完成' : '播放列表已播放完毕';
+        
+        // 创建提示元素
+        const endMessageEl = document.createElement('div');
+        endMessageEl.className = 'playlist-end-message';
+        endMessageEl.innerHTML = `
+            <div class="message-content">
+                <h3>${message}</h3>
+                <p>感谢您的聆听！</p>
+                <button onclick="this.parentElement.parentElement.remove()">确定</button>
+            </div>
+        `;
+        
+        document.body.appendChild(endMessageEl);
+        
+        // 5秒后自动移除
+        setTimeout(() => {
+            if (endMessageEl.parentNode) {
+                endMessageEl.parentNode.removeChild(endMessageEl);
+            }
+        }, 5000);
+    }
+
+    /**
+     * 获取当前播放模式
+     */
+    getCurrentPlayMode() {
+        return this.playMode;
+    }
+
+    /**
+     * 获取播放统计信息
+     */
+    getPlayStats() {
+        const totalPlays = Object.keys(this.userPreferences)
+            .filter(key => key.startsWith('playCount_'))
+            .reduce((sum, key) => sum + (this.userPreferences[key] || 0), 0);
+        
+        const favoriteSongs = Object.keys(this.userPreferences)
+            .filter(key => !key.startsWith('playCount_'))
+            .map(key => ({
+                index: parseInt(key),
+                preference: this.userPreferences[key]
+            }))
+            .sort((a, b) => b.preference - a.preference)
+            .slice(0, 5);
+        
+        return {
+            totalPlays,
+            favoriteSongs,
+            currentMode: this.playMode,
+            playlistLength: this.playlist.length
+        };
+    }
+
+    /**
+     * 循环切换播放模式
+     */
+    cyclePlayMode() {
+        const modes = ['sequential', 'shuffle', 'repeat-one', 'repeat-all'];
+        const currentIndex = modes.indexOf(this.playMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        this.setPlayMode(modes[nextIndex]);
+        
+        // 显示模式切换提示
+        this.showModeChangeNotification(modes[nextIndex]);
+    }
+
+    /**
+     * 切换重复模式
+     */
+    toggleRepeatMode() {
+        if (this.playMode === 'repeat-one') {
+            this.setPlayMode('sequential');
+        } else if (this.playMode === 'repeat-all') {
+            this.setPlayMode('sequential');
+        } else {
+            this.setPlayMode('repeat-one');
+        }
+        
+        this.showModeChangeNotification(this.playMode);
+    }
+
+    /**
+     * 显示模式切换通知
+     */
+    showModeChangeNotification(mode) {
+        const notificationEl = document.createElement('div');
+        notificationEl.className = 'mode-notification';
+        notificationEl.innerHTML = `
+            <div class="notification-content">
+                <span class="mode-icon">${this.getModeIcon(mode)}</span>
+                <span class="mode-text">${this.getPlayModeDisplayName(mode)}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notificationEl);
+        
+        // 2秒后自动移除
+        setTimeout(() => {
+            if (notificationEl.parentNode) {
+                notificationEl.parentNode.removeChild(notificationEl);
+            }
+        }, 2000);
+    }
+
+    /**
+     * 获取播放模式图标
+     */
+    getModeIcon(mode) {
+        const icons = {
+            'sequential': '▶️',
+            'shuffle': '🔀',
+            'repeat-one': '🔂',
+            'repeat-all': '🔁'
+        };
+        return icons[mode] || '▶️';
+    }
+}
+
+// 初始化播放器
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('正在初始化音乐播放器...');
+    
+    // 创建播放器实例
+    window.musicPlayer = new MusicPlayer();
+    
+    // 初始化播放器
+    await window.musicPlayer.initialize();
+});

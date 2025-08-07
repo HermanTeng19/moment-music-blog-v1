@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一体化音乐播放器原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        #player-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+        #player-content {
+            position: relative;
+            z-index: 2;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .progress-bar-container {
+            position: relative;
+        }
+        #progress-fill {
+            position: absolute;
+            height: 4px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0;
+            pointer-events: none;
+        }
+        .controls-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 0;
+            z-index: 10;
+            background-color: transparent;
+        }
+        .volume-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        #volume-slider {
+            width: 80px;
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .volume-container:hover #volume-slider {
+            opacity: 1;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        /* 歌词容器样式 - 修改后占满整个播放器容器宽度 */
+        #lyrics-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            opacity: 0;
+            margin-top: 20px;
+            width: 100%; /* 占满整个宽度 */
+            position: relative;
+            left: 0;
+            padding: 0;
+        }
+        #lyrics-container.active {
+            max-height: 400px;
+            opacity: 1;
+            background-color: rgba(0, 0, 0, 0.2); /* 修改为20%不透明度(80%透明度) */
+            padding: 20px;
+        }
+        #lyrics-content {
+            color: white;
+            line-height: 1.8;
+            text-align: center;
+            white-space: pre-line;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        /* 播放列表样式 */
+        #playlist-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #playlist-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #playlist-content {
+            background-color: rgba(30, 30, 30, 0.9);
+            border-radius: 12px;
+            padding: 24px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .playlist-item {
+            padding: 12px;
+            margin: 8px 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .playlist-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .playlist-item.active {
+            background-color: rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+        }
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div id="player-container" class="relative min-h-screen w-full flex flex-col bg-cover bg-center transition-opacity duration-1000" style="background-image: url('https://picsum.photos/1920/1080');">
+        <div id="player-content" class="w-full h-full flex flex-col">
+            <div class="w-full max-w-2xl mx-auto text-center px-6 sm:px-8 pt-12">
+                <h1 id="song-title" class="text-3xl font-bold tracking-wider">第061期 Wild</h1>
+                <p id="song-artist" class="text-lg text-gray-300 mt-1">DJ思源版</p>
+            </div>
+            
+            <!-- 歌词容器 - 现在占满整个播放器容器宽度 -->
+            <div id="lyrics-container">
+                <div id="lyrics-content" class="lyrics-content">
+                    <!-- 歌词内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <div class="flex-grow"></div>
+        </div>
+    </div>
+    
+    <!-- 播放列表弹窗 -->
+    <div id="playlist-overlay">
+        <div id="playlist-content">
+            <h2 class="text-2xl font-bold mb-6">播放列表</h2>
+            <div id="playlist-container">
+                <!-- 播放列表项将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        <button class="close-btn" id="close-playlist-btn">×</button>
+    </div>
+    
+    <div class="controls-container">
+        <div class="w-full mb-6 px-6 sm:px-8">
+            <div class="progress-bar-container">
+                <div id="progress-fill"></div>
+                <input id="progress-bar" type="range" value="0" min="0" max="100" class="w-full h-1 cursor-pointer">
+            </div>
+            <div class="flex justify-between text-xs text-gray-300 mt-2">
+                <span id="current-time">0:00</span>
+                <span id="total-duration">0:00</span>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between w-full px-6 sm:px-8 relative">
+            <!-- 左侧按钮组 - 与中央按钮对齐 -->
+            <div class="flex items-center space-x-6 absolute left-8">
+                <button id="playlist-btn" class="text-white hover:text-gray-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                </button>
+                <button id="lyrics-btn" class="text-white hover:text-gray-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 中间播放控制按钮 - 基准水平线 -->
+            <div class="flex items-center space-x-6 mx-auto">
+                <button id="prev-btn" class="text-white hover:text-gray-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8.445 14.832A1 1 0 0010 14.03V5.969a1 1 0 00-1.555-.832L4.12 9.168a1 1 0 000 1.664l4.325 4.001zM14.445 14.832A1 1 0 0016 14.03V5.969a1 1 0 00-1.555-.832L10.12 9.168a1 1 0 000 1.664l4.325 4.001z"/>
+                    </svg>
+                </button>
+                <button id="play-pause-btn" class="bg-white text-gray-900 rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8.002v3.996a1 1 0 001.555.832l3.198-1.998a1 1 0 000-1.664l-3.198-1.998z" clip-rule="evenodd" />
+                    </svg>
+                    <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 hidden" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button id="next-btn" class="text-white hover:text-gray-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5.555 5.168A1 1 0 004 5.97v8.06a1 1 0 001.555.832l4.325-4.03a1 1 0 000-1.664L5.555 5.168zM11.555 5.168A1 1 0 0010 5.97v8.06a1 1 0 001.555.832l4.325-4.03a1 1 0 000-1.664l-4.325-4.03z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 右侧按钮组 - 与中央按钮对齐 -->
+            <div class="flex items-center space-x-6 absolute right-8">
+                <button class="text-white hover:text-gray-300 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6.598 4.098l-2.122-2.122M4 12H2m15.098-6.598l-2.122 2.122M12 20v-1m-6.598-4.098l2.122-2.122M4 12a8 8 0 018-8v0a8 8 0 018 8v0a8 8 0 01-8 8v0a8 8 0 01-8-8v0z" />
+                    </svg>
+                </button>
+                <div class="volume-container">
+                    <button id="volume-btn" class="text-white hover:text-gray-300 transition-colors">
+                        <svg id="volume-high-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.108 12 5v14c0 .892-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                        <svg id="volume-mute-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.108 12 5v14c0 .892-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                    </button>
+                    <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.7" class="h-1 cursor-pointer">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio-player" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="metadata"></audio>
+
+    <script>
+        const audioPlayer = document.getElementById('audio-player');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressFill = document.getElementById('progress-fill');
+        const currentTimeEl = document.getElementById('current-time');
+        const totalDurationEl = document.getElementById('total-duration');
+        const playerContainer = document.getElementById('player-container');
+        const volumeBtn = document.getElementById('volume-btn');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeHighIcon = document.getElementById('volume-high-icon');
+        const volumeMuteIcon = document.getElementById('volume-mute-icon');
+        const playlistBtn = document.getElementById('playlist-btn');
+        const lyricsBtn = document.getElementById('lyrics-btn');
+        const lyricsContainer = document.getElementById('lyrics-container');
+        const lyricsContent = document.getElementById('lyrics-content');
+        const playlistOverlay = document.getElementById('playlist-overlay');
+        const playlistContainer = document.getElementById('playlist-container');
+        const closePlaylistBtn = document.getElementById('close-playlist-btn');
+
+        let isPlaying = false;
+        let lastVolume = 0.7;
+        audioPlayer.volume = 0.7;
+
+        // 模拟播放列表数据
+        const playlist = [
+            {
+                id: 1,
+                title: "第061期 Wild",
+                artist: "DJ思源版",
+                audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+                imageSrc: "https://picsum.photos/1920/1080",
+                lyrics: "这是Wild的歌词\n\n感受自由的节奏\n让心灵随风飘荡\n\n这是Wild的日记\n\n2023年5月15日\n今天创作了这首Wild，希望能带给听众自由的感觉。"
+            },
+            {
+                id: 2,
+                title: "夏日微风",
+                artist: "自然之声",
+                audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+                imageSrc: "https://picsum.photos/1920/1080?random=2",
+                lyrics: "这是夏日微风的歌词\n\n夏日的微风轻拂\n带来清凉的感觉\n\n这是夏日微风的日记\n\n2023年6月20日\n在炎热的夏日创作了这首曲子，希望能带来一丝凉意。"
+            },
+            {
+                id: 3,
+                title: "城市之夜",
+                artist: "都市节奏",
+                audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+                imageSrc: "https://picsum.photos/1920/1080?random=3",
+                lyrics: "这是城市之夜的歌词\n\n霓虹闪烁的城市\n夜晚的节奏不停\n\n这是城市之夜的日记\n\n2023年7月10日\n在深夜的城市中获得了灵感，创作了这首曲子。"
+            }
+        ];
+
+        let currentSongIndex = 0;
+        let areLyricsVisible = false;
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+        function playAudio() {
+            isPlaying = true;
+            audioPlayer.play();
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+        }
+        function pauseAudio() {
+            isPlaying = false;
+            audioPlayer.pause();
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+        }
+        function togglePlayPause() {
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        }
+        function updateProgress() {
+            if (audioPlayer.duration) {
+                const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressBar.value = progressPercent;
+                progressFill.style.width = `${progressPercent}%`;
+                currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+            }
+        }
+        function setProgress(e) {
+            const newTime = (e.target.value / 100) * audioPlayer.duration;
+            audioPlayer.currentTime = newTime;
+        }
+        function updateDuration() {
+            totalDurationEl.textContent = formatTime(audioPlayer.duration);
+        }
+        function changeBackground(imageUrl) {
+            const newImageUrl = imageUrl || `https://picsum.photos/1920/1080?random=${Math.random()}`;
+            const tempImg = new Image();
+            tempImg.src = newImageUrl;
+            tempImg.onload = () => {
+                playerContainer.style.opacity = '0';
+                setTimeout(() => {
+                    playerContainer.style.backgroundImage = `url('${newImageUrl}')`;
+                    playerContainer.style.opacity = '1';
+                }, 500);
+            };
+        }
+        function toggleMute() {
+            if (audioPlayer.volume > 0) {
+                lastVolume = audioPlayer.volume;
+                audioPlayer.volume = 0;
+                volumeSlider.value = 0;
+                volumeHighIcon.classList.add('hidden');
+                volumeMuteIcon.classList.remove('hidden');
+            } else {
+                audioPlayer.volume = lastVolume;
+                volumeSlider.value = lastVolume;
+                volumeHighIcon.classList.remove('hidden');
+                volumeMuteIcon.classList.add('hidden');
+            }
+        }
+        function setVolume(e) {
+            audioPlayer.volume = e.target.value;
+            if (audioPlayer.volume > 0) {
+                volumeHighIcon.classList.remove('hidden');
+                volumeMuteIcon.classList.add('hidden');
+            } else {
+                volumeHighIcon.classList.add('hidden');
+                volumeMuteIcon.classList.remove('hidden');
+            }
+        }
+        
+        // 渲染播放列表
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            playlist.forEach((song, index) => {
+                const songElement = document.createElement('div');
+                songElement.className = `playlist-item ${index === currentSongIndex ? 'active' : ''}`;
+                songElement.innerHTML = `
+                    <div class="font-medium">${song.title}</div>
+                    <div class="text-sm text-gray-300">${song.artist}</div>
+                `;
+                songElement.addEventListener('click', () => {
+                    loadSong(index);
+                    playlistOverlay.classList.remove('active');
+                });
+                playlistContainer.appendChild(songElement);
+            });
+        }
+        
+        // 加载歌曲
+        function loadSong(index) {
+            currentSongIndex = index;
+            const song = playlist[index];
+            
+            // 更新音频源
+            audioPlayer.src = song.audioSrc;
+            
+            // 更新UI
+            document.getElementById('song-title').textContent = song.title;
+            document.getElementById('song-artist').textContent = song.artist;
+            
+            // 更新背景
+            changeBackground(song.imageSrc);
+            
+            // 更新歌词
+            lyricsContent.textContent = song.lyrics;
+            
+            // 关键修改：自动播放新歌曲
+            isPlaying = true;
+            audioPlayer.play().then(() => {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            }).catch(error => {
+                console.log('自动播放失败，可能需要用户交互：', error);
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                isPlaying = false;
+            });
+            
+            // 重新渲染播放列表以更新活动项
+            renderPlaylist();
+        }
+        
+        // 下一首
+        function nextSong() {
+            currentSongIndex = (currentSongIndex + 1) % playlist.length;
+            loadSong(currentSongIndex);
+        }
+        
+        // 上一首
+        function prevSong() {
+            currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+            loadSong(currentSongIndex);
+        }
+
+        // 切换歌词显示状态
+        function toggleLyrics() {
+            areLyricsVisible = !areLyricsVisible;
+            lyricsContainer.classList.toggle('active');
+        }
+
+        // 切换播放列表显示状态
+        function togglePlaylist() {
+            playlistOverlay.classList.toggle('active');
+        }
+
+        // 初始化
+        function init() {
+            // 设置第一首歌的歌词
+            lyricsContent.textContent = playlist[0].lyrics;
+            
+            // 渲染播放列表
+            renderPlaylist();
+            
+            // 事件监听器
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            audioPlayer.addEventListener('timeupdate', updateProgress);
+            audioPlayer.addEventListener('loadedmetadata', updateDuration);
+            audioPlayer.addEventListener('ended', () => {
+                pauseAudio();
+                audioPlayer.currentTime = 0;
+                nextSong();
+            });
+            progressBar.addEventListener('input', setProgress);
+            nextBtn.addEventListener('click', nextSong);
+            prevBtn.addEventListener('click', prevSong);
+            volumeBtn.addEventListener('click', toggleMute);
+            volumeSlider.addEventListener('input', setVolume);
+            
+            // 歌词按钮事件
+            lyricsBtn.addEventListener('click', toggleLyrics);
+            
+            // 播放列表按钮事件
+            playlistBtn.addEventListener('click', togglePlaylist);
+            closePlaylistBtn.addEventListener('click', togglePlaylist);
+        }
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>

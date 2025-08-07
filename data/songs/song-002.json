@@ -1,0 +1,9 @@
+{
+  "id": "song-002",
+  "title": "夏日微风",
+  "artist": "自然之声",
+  "audioSrc": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=2",
+  "backgroundSrc": "https://picsum.photos/1920/1080?random=2",
+  "lyricsSrc": "assets/lyrics/song-002.txt"
+}
