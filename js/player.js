@@ -44,6 +44,11 @@ class MusicPlayer {
         this.playlistOverlay = document.getElementById('playlist-overlay');
         this.playlistContainer = document.getElementById('playlist-container');
         this.closePlaylistBtn = document.getElementById('close-playlist-btn');
+        
+        // 音频频谱
+        this.spectrumContainer = document.getElementById('audio-spectrum-container');
+        this.spectrumCanvas = document.getElementById('audio-spectrum-canvas');
+        this.spectrumCtx = this.spectrumCanvas.getContext('2d');
     }
 
     initializeState() {
@@ -62,6 +67,14 @@ class MusicPlayer {
         // 设置初始音量
         this.audioPlayer.volume = 0.7;
         this.volumeSlider.value = 0.7;
+        
+        // 音频频谱分析器相关状态
+        this.audioContext = null;
+        this.analyser = null;
+        this.audioSource = null;
+        this.frequencyData = null;
+        this.animationId = null;
+        this.isSpectrumActive = false;
     }
 
     bindEvents() {
@@ -192,6 +205,9 @@ class MusicPlayer {
             await this.audioPlayer.play();
             this.isPlaying = true;
             this.updatePlayButton(true);
+            
+            // 启动频谱动画
+            this.startSpectrumAnimation();
         } catch (error) {
             console.error('播放失败:', error);
             this.showError('播放失败，请检查音频文件');
@@ -205,6 +221,9 @@ class MusicPlayer {
         this.audioPlayer.pause();
         this.isPlaying = false;
         this.updatePlayButton(false);
+        
+        // 停止频谱动画
+        this.stopSpectrumAnimation();
     }
 
     /**
@@ -414,6 +433,7 @@ class MusicPlayer {
             // 播放列表结束
             this.pauseAudio();
             this.audioPlayer.currentTime = 0;
+            this.stopSpectrumAnimation();
             this.showPlaylistEndMessage();
         }
     }
@@ -877,6 +897,187 @@ class MusicPlayer {
         };
         return icons[mode] || '▶️';
     }
+
+    /**
+     * 初始化音频分析器
+     */
+    initializeAudioAnalyser() {
+        try {
+            // 创建音频上下文
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 创建分析器节点
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 256;
+            this.analyser.smoothingTimeConstant = 0.8;
+            
+            // 创建音频源
+            this.audioSource = this.audioContext.createMediaElementSource(this.audioPlayer);
+            this.audioSource.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+            
+            // 初始化频率数据数组
+            this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
+            
+            // 设置Canvas尺寸
+            this.setupCanvas();
+            
+            console.log('音频分析器初始化成功');
+            
+        } catch (error) {
+            console.warn('音频分析器初始化失败:', error);
+            this.audioContext = null;
+        }
+    }
+
+    /**
+     * 设置Canvas尺寸
+     */
+    setupCanvas() {
+        const container = this.spectrumContainer;
+        const canvas = this.spectrumCanvas;
+        
+        // 获取容器的实际尺寸
+        const rect = container.getBoundingClientRect();
+        
+        // 设置Canvas的显示尺寸
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        
+        // 设置Canvas的实际像素尺寸（考虑设备像素比）
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        canvas.width = rect.width * devicePixelRatio;
+        canvas.height = rect.height * devicePixelRatio;
+        
+        // 缩放上下文以匹配设备像素比
+        this.spectrumCtx.scale(devicePixelRatio, devicePixelRatio);
+    }
+
+    /**
+     * 开始频谱动画
+     */
+    startSpectrumAnimation() {
+        if (!this.audioContext) {
+            this.initializeAudioAnalyser();
+        }
+        
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+        
+        this.isSpectrumActive = true;
+        this.spectrumContainer.classList.add('active');
+        this.drawSpectrum();
+    }
+
+    /**
+     * 停止频谱动画
+     */
+    stopSpectrumAnimation() {
+        this.isSpectrumActive = false;
+        this.spectrumContainer.classList.remove('active');
+        
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        
+        // 清空Canvas
+        this.clearCanvas();
+    }
+
+    /**
+     * 绘制频谱动画
+     */
+    drawSpectrum() {
+        if (!this.isSpectrumActive || !this.analyser) {
+            return;
+        }
+
+        // 获取频率数据
+        this.analyser.getByteFrequencyData(this.frequencyData);
+        
+        // 清空Canvas
+        this.clearCanvas();
+        
+        // 绘制频谱柱状图
+        this.drawBars();
+        
+        // 继续动画
+        this.animationId = requestAnimationFrame(() => this.drawSpectrum());
+    }
+
+    /**
+     * 清空Canvas
+     */
+    clearCanvas() {
+        const canvas = this.spectrumCanvas;
+        this.spectrumCtx.clearRect(0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+    }
+
+    /**
+     * 绘制频谱柱状图
+     */
+    drawBars() {
+        const canvas = this.spectrumCanvas;
+        const ctx = this.spectrumCtx;
+        const canvasWidth = canvas.width / (window.devicePixelRatio || 1);
+        const canvasHeight = canvas.height / (window.devicePixelRatio || 1);
+        
+        // 频谱柱的数量（取频率数据的一部分，避免过于密集）
+        const barCount = Math.min(64, this.frequencyData.length);
+        const barWidth = canvasWidth / barCount;
+        const barSpacing = barWidth * 0.1; // 10%的间距
+        const actualBarWidth = barWidth - barSpacing;
+        
+        // 设置绘制样式
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        
+        // 绘制每个频谱柱
+        for (let i = 0; i < barCount; i++) {
+            // 获取频率数据（归一化到0-1）
+            const frequency = this.frequencyData[i] / 255;
+            
+            // 计算柱子高度（添加一些随机跳动效果）
+            const baseHeight = frequency * canvasHeight * 0.8;
+            const jumpEffect = Math.random() * frequency * canvasHeight * 0.1;
+            const barHeight = Math.max(2, baseHeight + jumpEffect);
+            
+            // 计算柱子位置
+            const x = i * barWidth + barSpacing / 2;
+            const y = canvasHeight - barHeight;
+            
+            // 绘制柱子（添加圆角效果）
+            this.drawRoundedBar(ctx, x, y, actualBarWidth, barHeight);
+        }
+    }
+
+    /**
+     * 绘制圆角柱状图
+     */
+    drawRoundedBar(ctx, x, y, width, height) {
+        const radius = Math.min(width / 4, 2);
+        
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y + height);
+        ctx.lineTo(x + radius, y + radius);
+        ctx.arcTo(x, y, x + width, y, radius);
+        ctx.lineTo(x + width - radius, y);
+        ctx.arcTo(x + width, y, x + width, y + radius, radius);
+        ctx.lineTo(x + width, y + height);
+        ctx.lineTo(x, y + height);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    /**
+     * 处理窗口尺寸变化
+     */
+    handleResize() {
+        if (this.spectrumCanvas) {
+            this.setupCanvas();
+        }
+    }
 }
 
 // 初始化播放器
@@ -888,4 +1089,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 初始化播放器
     await window.musicPlayer.initialize();
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', () => {
+        if (window.musicPlayer) {
+            window.musicPlayer.handleResize();
+        }
+    });
 });

@@ -59,6 +59,29 @@ body {
     pointer-events: none;
 }
 
+/* 音频频谱容器 */
+.audio-spectrum-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.audio-spectrum-container.active {
+    opacity: 1;
+}
+
+#audio-spectrum-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 /* 控制按钮容器 */
 .controls-container {
     position: fixed;
