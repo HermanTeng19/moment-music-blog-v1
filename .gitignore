@@ -63,3 +63,6 @@ coverage/
 # 其他
 *.tgz
 *.tar.gz
+
+# 本地示例/实验文件
+progress-bar-effect.html
