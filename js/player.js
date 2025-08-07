@@ -49,6 +49,9 @@ class MusicPlayer {
         this.spectrumContainer = document.getElementById('audio-spectrum-container');
         this.spectrumCanvas = document.getElementById('audio-spectrum-canvas');
         this.spectrumCtx = this.spectrumCanvas.getContext('2d');
+        this.spectrumToggleBtn = document.getElementById('spectrum-toggle-btn');
+        this.spectrumOnIcon = document.getElementById('spectrum-on-icon');
+        this.spectrumOffIcon = document.getElementById('spectrum-off-icon');
     }
 
     initializeState() {
@@ -75,6 +78,7 @@ class MusicPlayer {
         this.frequencyData = null;
         this.animationId = null;
         this.isSpectrumActive = false;
+        this.isSpectrumEnabled = true; // 频谱开关状态
     }
 
     bindEvents() {
@@ -100,6 +104,9 @@ class MusicPlayer {
         this.lyricsBtn.addEventListener('click', () => this.toggleLyrics());
         this.playlistBtn.addEventListener('click', () => this.togglePlaylist());
         this.closePlaylistBtn.addEventListener('click', () => this.togglePlaylist());
+        
+        // 频谱开关事件
+        this.spectrumToggleBtn.addEventListener('click', () => this.toggleSpectrum());
         
         // 播放模式切换事件
         this.bindPlayModeEvents();
@@ -138,6 +145,9 @@ class MusicPlayer {
             
             this.isInitialized = true;
             this.showLoading(false);
+            
+            // 初始化频谱开关图标状态
+            this.updateSpectrumToggleIcon();
             
             console.log('播放器初始化完成，共加载', this.playlist.length, '首歌曲');
             
@@ -206,8 +216,10 @@ class MusicPlayer {
             this.isPlaying = true;
             this.updatePlayButton(true);
             
-            // 启动频谱动画
-            this.startSpectrumAnimation();
+            // 启动频谱动画（如果频谱开关开启）
+            if (this.isSpectrumEnabled) {
+                this.startSpectrumAnimation();
+            }
         } catch (error) {
             console.error('播放失败:', error);
             this.showError('播放失败，请检查音频文件');
@@ -326,6 +338,26 @@ class MusicPlayer {
     }
 
     /**
+     * 切换频谱动画显示
+     */
+    toggleSpectrum() {
+        this.isSpectrumEnabled = !this.isSpectrumEnabled;
+        
+        if (this.isSpectrumEnabled) {
+            // 如果当前正在播放，启动频谱动画
+            if (this.isPlaying) {
+                this.startSpectrumAnimation();
+            }
+        } else {
+            // 停止频谱动画
+            this.stopSpectrumAnimation();
+        }
+        
+        // 更新图标显示
+        this.updateSpectrumToggleIcon();
+    }
+
+    /**
      * 切换播放列表显示
      */
     togglePlaylist() {
@@ -388,6 +420,19 @@ class MusicPlayer {
         } else {
             this.volumeHighIcon.classList.add('hidden');
             this.volumeMuteIcon.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * 更新频谱开关图标
+     */
+    updateSpectrumToggleIcon() {
+        if (this.isSpectrumEnabled) {
+            this.spectrumOnIcon.classList.remove('hidden');
+            this.spectrumOffIcon.classList.add('hidden');
+        } else {
+            this.spectrumOnIcon.classList.add('hidden');
+            this.spectrumOffIcon.classList.remove('hidden');
         }
     }
 
@@ -473,6 +518,10 @@ class MusicPlayer {
             case 'KeyP':
                 e.preventDefault();
                 this.togglePlaylist();
+                break;
+            case 'KeyS':
+                e.preventDefault();
+                this.toggleSpectrum();
                 break;
             case 'KeyM':
                 e.preventDefault();

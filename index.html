@@ -119,9 +119,13 @@
 
             <!-- 右侧功能按钮 -->
             <div class="flex items-center space-x-6 absolute right-8">
-                <button class="text-white hover:text-gray-300 transition-colors" title="设置">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6.598 4.098l-2.122-2.122M4 12H2m15.098-6.598l-2.122 2.122M12 20v-1m-6.598-4.098l2.122-2.122M4 12a8 8 0 018-8v0a8 8 0 018 8v0a8 8 0 01-8 8v0a8 8 0 01-8-8v0z" />
+                <button id="spectrum-toggle-btn" class="text-white hover:text-gray-300 transition-colors" title="开启/隐藏频谱 (S)">
+                    <svg id="spectrum-on-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <svg id="spectrum-off-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18 12M6 6l12 12" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
                     </svg>
                 </button>
                 <div class="volume-container">
@@ -157,7 +161,7 @@
     <!-- 页面加载完成提示 -->
     <script>
         console.log('Moment Music Player v1.0 - 纯静态音乐播放器');
-        console.log('快捷键：空格=播放/暂停, ←=上一首, →=下一首, L=歌词, P=播放列表');
+        console.log('快捷键：空格=播放/暂停, ←=上一首, →=下一首, L=歌词, P=播放列表, S=频谱开关');
     </script>
 </body>
 </html>
