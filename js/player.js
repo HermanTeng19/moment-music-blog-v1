@@ -20,8 +20,12 @@ class MusicPlayer {
         this.nextBtn = document.getElementById('next-btn');
         
         // 进度控制
-        this.progressBar = document.getElementById('progress-bar');
-        this.progressFill = document.getElementById('progress-fill');
+        this.progressBar = null; // 已移除原生range控件
+        this.progressFill = null; // 已移除旧的fill元素
+        this.waveCanvas = document.getElementById('waveCanvas');
+        this.waveCtx = null; // 不再绘制波浪线
+        this.progressMask = document.getElementById('progress');
+        this.progressOverlay = document.getElementById('progress-overlay');
         this.currentTimeEl = document.getElementById('current-time');
         this.totalDurationEl = document.getElementById('total-duration');
         
@@ -79,6 +83,9 @@ class MusicPlayer {
         this.animationId = null;
         this.isSpectrumActive = false;
         this.isSpectrumEnabled = true; // 频谱开关状态
+        
+        // 进度拖拽状态
+        this.isDraggingProgress = false;
     }
 
     bindEvents() {
@@ -93,8 +100,22 @@ class MusicPlayer {
         this.audioPlayer.addEventListener('ended', () => this.handleSongEnd());
         this.audioPlayer.addEventListener('error', (e) => this.handleAudioError(e));
         
-        // 进度条事件
-        this.progressBar.addEventListener('input', (e) => this.setProgress(e));
+        // 进度条事件（全屏容器点击/拖拽定位进度）
+        if (this.progressOverlay) {
+            console.log('Progress overlay found, binding events');
+            this.progressOverlay.addEventListener('mousedown', (e) => {
+                console.log('Mouse down on progress overlay');
+                this.handleProgressDown(e);
+            });
+            this.progressOverlay.addEventListener('mousemove', (e) => this.handleProgressMove(e));
+            document.addEventListener('mouseup', () => this.handleProgressUp());
+            // 触摸支持
+            this.progressOverlay.addEventListener('touchstart', (e) => this.handleProgressDown(e), { passive: true });
+            this.progressOverlay.addEventListener('touchmove', (e) => this.handleProgressMove(e), { passive: true });
+            document.addEventListener('touchend', () => this.handleProgressUp(), { passive: true });
+        } else {
+            console.error('Progress overlay not found!');
+        }
         
         // 音量控制事件
         this.volumeBtn.addEventListener('click', () => this.toggleMute());
@@ -156,6 +177,9 @@ class MusicPlayer {
             this.showError('播放器初始化失败: ' + error.message);
             this.showLoading(false);
         }
+
+        // 初始化全屏遮罩尺寸
+        this.setupProgressWaveCanvas();
     }
 
     /**
@@ -280,8 +304,7 @@ class MusicPlayer {
     updateProgress() {
         if (this.audioPlayer.duration) {
             const progressPercent = (this.audioPlayer.currentTime / this.audioPlayer.duration) * 100;
-            this.progressBar.value = progressPercent;
-            this.progressFill.style.width = `${progressPercent}%`;
+            if (this.progressMask) this.progressMask.style.width = `${progressPercent}%`;
             this.currentTimeEl.textContent = this.formatTime(this.audioPlayer.currentTime);
         }
     }
@@ -289,11 +312,29 @@ class MusicPlayer {
     /**
      * 设置播放进度
      */
-    setProgress(e) {
-        if (this.audioPlayer.duration) {
-            const newTime = (e.target.value / 100) * this.audioPlayer.duration;
-            this.audioPlayer.currentTime = newTime;
-        }
+    handleProgressDown(event) {
+        if (!this.audioPlayer || !this.audioPlayer.duration || !this.progressOverlay) return;
+        this.isDraggingProgress = true;
+        this.seekByEvent(event);
+    }
+
+    handleProgressMove(event) {
+        if (!this.isDraggingProgress) return;
+        this.seekByEvent(event);
+    }
+
+    handleProgressUp() {
+        this.isDraggingProgress = false;
+    }
+
+    seekByEvent(event) {
+        if (!this.audioPlayer || !this.audioPlayer.duration || !this.progressOverlay) return;
+        const rect = this.progressOverlay.getBoundingClientRect();
+        const clientX = (event.touches && event.touches.length) ? event.touches[0].clientX : event.clientX;
+        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        this.audioPlayer.currentTime = ratio * this.audioPlayer.duration;
+        if (this.progressMask) this.progressMask.style.width = `${ratio * 100}%`;
+        this.currentTimeEl.textContent = this.formatTime(this.audioPlayer.currentTime);
     }
 
     /**
@@ -1003,6 +1044,19 @@ class MusicPlayer {
     }
 
     /**
+     * 初始化进度波形Canvas大小
+     */
+    setupProgressWaveCanvas() {
+        if (!this.waveCanvas || !this.waveCtx) return;
+        const rect = this.waveCanvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.waveCanvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        this.waveCanvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        this.waveCtx.setTransform(1, 0, 0, 1, 0, 0);
+        this.waveCtx.scale(dpr, dpr);
+    }
+
+    /**
      * 开始频谱动画
      */
     startSpectrumAnimation() {
@@ -1018,6 +1072,11 @@ class MusicPlayer {
         this.spectrumContainer.classList.add('active');
         this.drawSpectrum();
     }
+
+    /**
+     * 使用 requestAnimationFrame 绘制简单波形动画背景
+     */
+    startProgressWaveAnimation() { /* 已移除波浪动画 */ }
 
     /**
      * 停止频谱动画
@@ -1126,6 +1185,7 @@ class MusicPlayer {
         if (this.spectrumCanvas) {
             this.setupCanvas();
         }
+        this.setupProgressWaveCanvas();
     }
 }
 

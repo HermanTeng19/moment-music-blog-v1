@@ -37,25 +37,41 @@ body {
 
 #player-content {
     position: relative;
-    z-index: 2;
+    z-index: 10; /* 高于进度条以确保内容可见 */
     height: 100vh;
     display: flex;
     flex-direction: column;
+    pointer-events: none; /* 容器不拦截事件，让点击穿透到进度条 */
 }
 
-/* 进度条样式 */
+/* 确保歌词按钮可以接收事件 */
+#player-content button {
+    pointer-events: auto;
+}
+
+/* 进度条样式（替换为Canvas波形+进度遮罩） */
+/* 全屏进度条覆盖层：位于背景图上方，其它控件下方 */
 .progress-bar-container {
-    position: relative;
+    position: absolute;
+    inset: 0; /* 覆盖整个播放器容器 */
+    z-index: 5; /* 确保在所有内容之上以接收点击事件 */
+    background: transparent; /* 全透明背景 */
+    pointer-events: auto; /* 允许点击以进行进度跳转 */
+    cursor: pointer; /* 悬停时显示"手指点击"图标 */
+    -webkit-user-select: none;
+    user-select: none;
 }
 
-#progress-fill {
+#waveCanvas { display: none; } /* 去掉中间波浪线 */
+
+#progress {
     position: absolute;
-    height: 4px;
-    background-color: #ffffff;
-    border-radius: 5px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
     left: 0;
+    width: 0%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.2); /* 保持现在前景透明度 */
+    z-index: 1;
     pointer-events: none;
 }
 
@@ -89,8 +105,15 @@ body {
     left: 0;
     right: 0;
     padding: 20px 0;
-    z-index: 10;
+    z-index: 15; /* 高于进度条以确保控件可点击 */
     background-color: transparent;
+    pointer-events: none; /* 容器不拦截事件 */
+}
+
+/* 确保控件内的按钮可以接收事件 */
+.controls-container button,
+.controls-container input {
+    pointer-events: auto;
 }
 
 /* 音量控制 */
@@ -170,6 +193,7 @@ input[type=range]::-moz-range-thumb {
     position: relative;
     left: 0;
     padding: 0;
+    pointer-events: none; /* 不拦截进度条点击 */
 }
 
 #lyrics-container.active {
