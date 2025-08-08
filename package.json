@@ -1,0 +1,29 @@
+{
+  "name": "moment-music-blog",
+  "version": "1.0.0",
+  "description": "A beautiful music player with 7 songs and auto-play features",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 serve.py",
+    "start": "python3 serve.py",
+    "build": "echo 'Static site - no build required'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "music",
+    "player",
+    "audio",
+    "playlist",
+    "html5",
+    "javascript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/moment-music-blog-v1.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
