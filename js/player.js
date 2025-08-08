@@ -313,7 +313,7 @@ class MusicPlayer {
      * 设置播放进度
      */
     handleProgressDown(event) {
-        if (!this.audioPlayer || !this.audioPlayer.duration || !this.progressOverlay) return;
+        if (!this.audioPlayer || !this.progressOverlay) return;
         this.isDraggingProgress = true;
         this.seekByEvent(event);
     }
@@ -328,13 +328,53 @@ class MusicPlayer {
     }
 
     seekByEvent(event) {
-        if (!this.audioPlayer || !this.audioPlayer.duration || !this.progressOverlay) return;
+        if (!this.audioPlayer || !this.progressOverlay) return;
+        
+        // 检查音频是否有有效的duration
+        if (!this.audioPlayer.duration || isNaN(this.audioPlayer.duration) || this.audioPlayer.duration <= 0) {
+            // 如果duration还没加载，尝试等待并重试
+            console.log('音频duration还未加载，等待元数据...');
+            
+            // 设置一个监听器，等待loadedmetadata事件
+            const onMetadataLoaded = () => {
+                this.audioPlayer.removeEventListener('loadedmetadata', onMetadataLoaded);
+                if (this.audioPlayer.duration && this.audioPlayer.duration > 0) {
+                    console.log('元数据已加载，重新执行seekByEvent');
+                    this.performSeek(event);
+                }
+            };
+            
+            // 如果元数据还没加载，添加监听器
+            if (this.audioPlayer.readyState < 1) {
+                this.audioPlayer.addEventListener('loadedmetadata', onMetadataLoaded);
+                // 触发元数据加载
+                this.audioPlayer.load();
+            } else {
+                // 可能是其他问题，显示提示
+                this.showError('音频文件元数据加载失败，请稍后重试');
+            }
+            return;
+        }
+        
+        this.performSeek(event);
+    }
+
+    /**
+     * 执行实际的进度定位
+     */
+    performSeek(event) {
+        if (!this.audioPlayer || !this.progressOverlay || !this.audioPlayer.duration) return;
+        
         const rect = this.progressOverlay.getBoundingClientRect();
         const clientX = (event.touches && event.touches.length) ? event.touches[0].clientX : event.clientX;
         const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        this.audioPlayer.currentTime = ratio * this.audioPlayer.duration;
+        const newTime = ratio * this.audioPlayer.duration;
+        
+        console.log(`定位到: ${this.formatTime(newTime)} (${(ratio * 100).toFixed(1)}%)`);
+        
+        this.audioPlayer.currentTime = newTime;
         if (this.progressMask) this.progressMask.style.width = `${ratio * 100}%`;
-        this.currentTimeEl.textContent = this.formatTime(this.audioPlayer.currentTime);
+        this.currentTimeEl.textContent = this.formatTime(newTime);
     }
 
     /**
