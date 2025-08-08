@@ -195,6 +195,9 @@ class MusicPlayer {
         const song = this.playlist[index];
         
         try {
+            // 设置crossorigin属性以支持CORS（重要！）
+            this.audioPlayer.crossOrigin = 'anonymous';
+            
             // 更新音频源
             this.audioPlayer.src = song.audioSrc;
             
@@ -1033,6 +1036,11 @@ class MusicPlayer {
      */
     initializeAudioAnalyser() {
         try {
+            // 确保音频元素支持CORS
+            if (!this.audioPlayer.crossOrigin) {
+                this.audioPlayer.crossOrigin = 'anonymous';
+            }
+            
             // 创建音频上下文
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
@@ -1041,10 +1049,18 @@ class MusicPlayer {
             this.analyser.fftSize = 256;
             this.analyser.smoothingTimeConstant = 0.8;
             
-            // 创建音频源
-            this.audioSource = this.audioContext.createMediaElementSource(this.audioPlayer);
-            this.audioSource.connect(this.analyser);
-            this.analyser.connect(this.audioContext.destination);
+            // 创建音频源 - 添加CORS错误处理
+            try {
+                this.audioSource = this.audioContext.createMediaElementSource(this.audioPlayer);
+                this.audioSource.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+            } catch (corsError) {
+                console.warn('音频分析器CORS错误:', corsError);
+                this.audioContext = null;
+                this.analyser = null;
+                this.audioSource = null;
+                return;
+            }
             
             // 初始化频率数据数组
             this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
