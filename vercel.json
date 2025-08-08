@@ -3,16 +3,7 @@
   "name": "moment-music-blog",
   "headers": [
     {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/**/*.mp3",
+      "source": "/assets/audio/(.*)",
       "headers": [
         {
           "key": "cache-control",
@@ -29,7 +20,7 @@
       ]
     },
     {
-      "source": "/**/*.{jpg,png,svg}",
+      "source": "/assets/images/(.*)",
       "headers": [
         {
           "key": "cache-control",
@@ -38,7 +29,16 @@
       ]
     },
     {
-      "source": "/**/*.{txt,json}",
+      "source": "/assets/lyrics/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/data/(.*)",
       "headers": [
         {
           "key": "cache-control",
