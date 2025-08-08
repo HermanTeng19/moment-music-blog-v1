@@ -54,8 +54,8 @@
     </div>
 
     <div class="test-section">
-        <h3>测试2: R2音频文件</h3>
-        <audio controls crossorigin="anonymous" id="r2Audio">
+        <h3>测试2: R2音频文件 (无crossorigin)</h3>
+        <audio controls id="r2Audio">
             <source src="https://music.aibytes.dpdns.org/1001%20Not%20All%20Heroes%20Wear%20Capes.mp3" type="audio/mpeg">
         </audio>
         <button onclick="testR2Audio()">测试R2音频</button>
@@ -120,7 +120,7 @@
             
             const audio = document.createElement('audio');
             audio.controls = true;
-            audio.crossOrigin = 'anonymous';
+            // 不设置crossOrigin以避免CORS预检
             audio.style.width = '100%';
             
             audio.addEventListener('loadstart', () => log('手动音频: loadstart'));

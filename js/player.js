@@ -195,13 +195,19 @@ class MusicPlayer {
         const song = this.playlist[index];
         
         try {
-            // 设置crossorigin属性以支持CORS（重要！）
-            this.audioPlayer.crossOrigin = 'anonymous';
+            // 对于R2文件，不设置crossorigin以避免CORS预检请求
+            if (song.audioSrc.includes('music.aibytes.dpdns.org')) {
+                // R2文件不设置crossorigin，避免OPTIONS预检
+                this.audioPlayer.removeAttribute('crossorigin');
+            } else {
+                // 本地文件设置crossorigin
+                this.audioPlayer.crossOrigin = 'anonymous';
+            }
             
             // 更新音频源
             this.audioPlayer.src = song.audioSrc;
             
-            // 强制重新加载以应用crossorigin设置
+            // 强制重新加载
             this.audioPlayer.load();
             
             // 更新歌曲信息
@@ -1069,10 +1075,8 @@ class MusicPlayer {
      */
     initializeAudioAnalyser() {
         try {
-            // 确保音频元素支持CORS
-            if (!this.audioPlayer.crossOrigin) {
-                this.audioPlayer.crossOrigin = 'anonymous';
-            }
+            // 注意：对于R2文件，我们不能使用crossorigin
+            // 这意味着频谱分析可能在某些情况下不可用
             
             // 创建音频上下文
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
