@@ -1,0 +1,9 @@
+{
+  "id": "song-009",
+  "title": "Comfortably Numb",
+  "artist": "Pink Floyd",
+  "audioSrc": "assets/audio/song-009.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=9",
+  "backgroundSrc": "assets/images/backgrounds/bg-009.png",
+  "lyricsSrc": "assets/lyrics/song-009.txt"
+}
