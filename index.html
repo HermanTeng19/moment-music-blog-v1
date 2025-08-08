@@ -31,10 +31,13 @@
         </div>
         <div id="player-content" class="w-full h-full flex flex-col">
             <!-- 歌曲信息区域 -->
-            <div class="w-full max-w-2xl mx-auto text-center px-6 sm:px-8 pt-12">
+            <div class="w-full max-w-2xl mx-auto text-center px-6 sm:px-8 pt-12 relative">
                 <h1 id="song-title" class="text-3xl font-bold tracking-wider">正在加载...</h1>
                 <p id="song-artist" class="text-lg text-gray-300 mt-1">请稍候</p>
             </div>
+            <!-- 时间显示区域 - 绝对定位到播放器容器左右两侧，与标题对齐 -->
+            <span id="current-time" class="absolute left-6 top-12 text-3xl tracking-wider text-white z-20">0:00</span>
+            <span id="total-duration" class="absolute right-6 top-12 text-3xl tracking-wider text-white z-20">0:00</span>
             
             <!-- 歌词容器 -->
             <div id="lyrics-container">
@@ -61,13 +64,6 @@
     
     <!-- 播放控制区域 -->
     <div class="controls-container">
-        <!-- 进度条区域（时间显示保留） -->
-        <div class="w-full mb-6 px-6 sm:px-8">
-            <div class="flex justify-between text-xs text-gray-300 mt-2">
-                <span id="current-time">0:00</span>
-                <span id="total-duration">0:00</span>
-            </div>
-        </div>
         
         <!-- 音频频谱容器 -->
         <div id="audio-spectrum-container" class="audio-spectrum-container">
