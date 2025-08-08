@@ -1,0 +1,9 @@
+{
+  "id": "song-008",
+  "title": "翩翩",
+  "artist": "ACE组合",
+  "audioSrc": "assets/audio/song-008.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=8",
+  "backgroundSrc": "https://picsum.photos/1920/1080?random=8",
+  "lyricsSrc": "assets/lyrics/song-008.txt"
+}
