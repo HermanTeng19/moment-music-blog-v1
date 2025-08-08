@@ -1,0 +1,9 @@
+{
+  "id": "song-011",
+  "title": "Not All Heroes Wear Capes",
+  "artist": "Owl City",
+  "audioSrc": "https://music.aibytes.dpdns.org/1001 Not All Heroes Wear Capes.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=11",
+  "backgroundSrc": "https://picsum.photos/1920/1080?random=11",
+  "lyricsSrc": "assets/lyrics/song-011.txt"
+}
