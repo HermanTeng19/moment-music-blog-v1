@@ -1,18 +1,6 @@
 {
   "version": 2,
   "name": "moment-music-blog",
-  "builds": [
-    {
-      "src": "**/*",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/assets/(.*)",
@@ -40,7 +28,7 @@
           "value": "bytes"
         },
         {
-          "key": "Content-Type",
+          "key": "Content-Type", 
           "value": "audio/mpeg"
         }
       ]
