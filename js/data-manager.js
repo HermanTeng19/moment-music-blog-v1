@@ -30,7 +30,9 @@ class DataManager {
      */
     async loadPlaylist() {
         try {
-            const response = await fetch('data/playlist.json');
+            // 添加时间戳防止缓存问题
+            const timestamp = new Date().getTime();
+            const response = await fetch(`data/playlist.json?v=${timestamp}`);
             if (!response.ok) {
                 throw new Error(`加载播放列表失败: ${response.status}`);
             }
@@ -60,7 +62,9 @@ class DataManager {
      */
     async loadSong(songId) {
         try {
-            const response = await fetch(`data/songs/${songId}.json`);
+            // 添加时间戳防止缓存问题
+            const timestamp = new Date().getTime();
+            const response = await fetch(`data/songs/${songId}.json?v=${timestamp}`);
             if (!response.ok) {
                 throw new Error(`加载歌曲 ${songId} 失败: ${response.status}`);
             }
@@ -82,7 +86,9 @@ class DataManager {
      */
     async loadLyrics(songId, lyricsSrc) {
         try {
-            const response = await fetch(lyricsSrc);
+            // 添加时间戳防止缓存问题
+            const timestamp = new Date().getTime();
+            const response = await fetch(`${lyricsSrc}?v=${timestamp}`);
             if (response.ok) {
                 const lyricsText = await response.text();
                 this.lyrics.set(songId, lyricsText);
