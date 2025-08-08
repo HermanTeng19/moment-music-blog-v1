@@ -12,7 +12,24 @@
       ]
     },
     {
-      "source": "/(.*\\.(mp3|jpg|png|svg|txt|json))",
+      "source": "/**/*.mp3",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Accept-Ranges",
+          "value": "bytes"
+        },
+        {
+          "key": "Content-Type",
+          "value": "audio/mpeg"
+        }
+      ]
+    },
+    {
+      "source": "/**/*.{jpg,png,svg}",
       "headers": [
         {
           "key": "cache-control",
@@ -21,15 +38,11 @@
       ]
     },
     {
-      "source": "/assets/audio/(.*)",
+      "source": "/**/*.{txt,json}",
       "headers": [
         {
-          "key": "Accept-Ranges",
-          "value": "bytes"
-        },
-        {
-          "key": "Content-Type", 
-          "value": "audio/mpeg"
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
