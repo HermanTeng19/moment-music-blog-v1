@@ -201,6 +201,9 @@ class MusicPlayer {
             // 更新音频源
             this.audioPlayer.src = song.audioSrc;
             
+            // 强制重新加载以应用crossorigin设置
+            this.audioPlayer.load();
+            
             // 更新歌曲信息
             this.songTitleEl.textContent = song.title;
             this.songArtistEl.textContent = song.artist;
@@ -571,8 +574,38 @@ class MusicPlayer {
      * 处理音频错误
      */
     handleAudioError(e) {
+        const error = e.target.error;
+        let errorMessage = '音频播放出错';
+        
+        if (error) {
+            switch (error.code) {
+                case error.MEDIA_ERR_ABORTED:
+                    errorMessage = '音频播放被中止';
+                    break;
+                case error.MEDIA_ERR_NETWORK:
+                    errorMessage = '网络错误导致音频加载失败';
+                    break;
+                case error.MEDIA_ERR_DECODE:
+                    errorMessage = '音频解码失败';
+                    break;
+                case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                    errorMessage = '音频格式不支持或文件不存在';
+                    break;
+                default:
+                    errorMessage = `音频播放错误 (代码: ${error.code})`;
+            }
+            console.error('音频错误详情:', {
+                code: error.code,
+                message: error.message,
+                src: this.audioPlayer.src,
+                crossOrigin: this.audioPlayer.crossOrigin,
+                readyState: this.audioPlayer.readyState,
+                networkState: this.audioPlayer.networkState
+            });
+        }
+        
         console.error('音频播放错误:', e);
-        this.showError('音频播放出错，请检查文件路径');
+        this.showError(errorMessage);
         this.pauseAudio();
     }
 

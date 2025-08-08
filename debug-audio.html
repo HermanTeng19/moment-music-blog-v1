@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>音频调试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        audio { width: 100%; margin: 10px 0; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 音频播放调试工具</h1>
+    
+    <div class="debug-section">
+        <h2>1. 直接音频测试</h2>
+        <audio id="direct-audio" controls crossorigin="anonymous">
+            <source src="https://music.aibytes.dpdns.org/1001%20Not%20All%20Heroes%20Wear%20Capes.mp3" type="audio/mpeg">
+        </audio>
+        <div id="direct-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>2. JavaScript控制测试</h2>
+        <button onclick="testJSControl()">测试JS播放控制</button>
+        <div id="js-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>3. CORS头检查</h2>
+        <button onclick="checkCORS()">检查CORS头</button>
+        <div id="cors-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>4. AudioContext测试</h2>
+        <button onclick="testAudioContext()">测试AudioContext</button>
+        <div id="context-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>5. 网络请求测试</h2>
+        <button onclick="testNetworkRequest()">测试网络请求</button>
+        <div id="network-result"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>6. 控制台日志</h2>
+        <div id="console-logs"></div>
+        <button onclick="clearLogs()">清除日志</button>
+    </div>
+
+    <script>
+        const audioUrl = 'https://music.aibytes.dpdns.org/1001%20Not%20All%20Heroes%20Wear%20Capes.mp3';
+        const logs = [];
+        
+        // 重写console.log以捕获日志
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addLog(type, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push({ type, message, timestamp });
+            updateLogs();
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addLog('info', args.join(' '));
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addLog('error', args.join(' '));
+        };
+        
+        console.warn = (...args) => {
+            originalWarn(...args);
+            addLog('warning', args.join(' '));
+        };
+        
+        function updateLogs() {
+            const logsDiv = document.getElementById('console-logs');
+            logsDiv.innerHTML = logs.slice(-10).map(log => 
+                `<div class="${log.type}">[${log.timestamp}] ${log.message}</div>`
+            ).join('');
+        }
+        
+        function clearLogs() {
+            logs.length = 0;
+            updateLogs();
+        }
+        
+        // 监听音频事件
+        const directAudio = document.getElementById('direct-audio');
+        const directResult = document.getElementById('direct-result');
+        
+        const audioEvents = [
+            'loadstart', 'durationchange', 'loadedmetadata', 'loadeddata',
+            'progress', 'canplay', 'canplaythrough', 'playing', 'waiting',
+            'seeking', 'seeked', 'ended', 'error', 'abort', 'emptied',
+            'stalled', 'suspend', 'play', 'pause'
+        ];
+        
+        audioEvents.forEach(eventType => {
+            directAudio.addEventListener(eventType, (e) => {
+                const msg = `Audio Event: ${eventType}`;
+                console.log(msg);
+                
+                if (eventType === 'error') {
+                    const error = e.target.error;
+                    console.error(`Audio Error Code: ${error.code}, Message: ${error.message}`);
+                }
+                
+                if (eventType === 'loadedmetadata') {
+                    console.log(`Duration: ${directAudio.duration}s`);
+                    console.log(`ReadyState: ${directAudio.readyState}`);
+                }
+            });
+        });
+        
+        async function testJSControl() {
+            const resultDiv = document.getElementById('js-result');
+            resultDiv.innerHTML = '<div class="info">正在测试JavaScript控制...</div>';
+            
+            try {
+                const audio = document.getElementById('direct-audio');
+                
+                // 检查音频状态
+                resultDiv.innerHTML += `<div class="info">当前状态: paused=${audio.paused}, ended=${audio.ended}</div>`;
+                resultDiv.innerHTML += `<div class="info">ReadyState: ${audio.readyState}</div>`;
+                resultDiv.innerHTML += `<div class="info">NetworkState: ${audio.networkState}</div>`;
+                resultDiv.innerHTML += `<div class="info">Duration: ${audio.duration || 'unknown'}</div>`;
+                resultDiv.innerHTML += `<div class="info">Current Time: ${audio.currentTime}</div>`;
+                resultDiv.innerHTML += `<div class="info">CrossOrigin: ${audio.crossOrigin}</div>`;
+                
+                // 尝试播放
+                console.log('尝试播放音频...');
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    await playPromise;
+                    resultDiv.innerHTML += '<div class="success">✅ JavaScript播放成功</div>';
+                } else {
+                    resultDiv.innerHTML += '<div class="warning">⚠️ play()没有返回Promise</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ JavaScript播放失败: ${error.message}</div>`;
+                console.error('播放错误详情:', error);
+            }
+        }
+        
+        async function checkCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<div class="info">正在检查CORS...</div>';
+            
+            try {
+                const response = await fetch(audioUrl, { method: 'HEAD' });
+                
+                resultDiv.innerHTML = `<div class="success">✅ 请求成功: ${response.status}</div>`;
+                
+                // 检查CORS头
+                const corsHeaders = [
+                    'Access-Control-Allow-Origin',
+                    'Access-Control-Allow-Methods', 
+                    'Access-Control-Allow-Headers',
+                    'Access-Control-Expose-Headers'
+                ];
+                
+                corsHeaders.forEach(header => {
+                    const value = response.headers.get(header);
+                    if (value) {
+                        resultDiv.innerHTML += `<div class="success">${header}: ${value}</div>`;
+                    } else {
+                        resultDiv.innerHTML += `<div class="warning">${header}: 未设置</div>`;
+                    }
+                });
+                
+                // 检查其他重要头
+                const otherHeaders = ['Content-Type', 'Content-Length', 'Accept-Ranges'];
+                otherHeaders.forEach(header => {
+                    const value = response.headers.get(header);
+                    if (value) {
+                        resultDiv.innerHTML += `<div class="info">${header}: ${value}</div>`;
+                    }
+                });
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ CORS检查失败: ${error.message}</div>`;
+            }
+        }
+        
+        async function testAudioContext() {
+            const resultDiv = document.getElementById('context-result');
+            resultDiv.innerHTML = '<div class="info">正在测试AudioContext...</div>';
+            
+            try {
+                const audio = document.getElementById('direct-audio');
+                
+                // 确保音频开始播放
+                if (audio.paused) {
+                    resultDiv.innerHTML += '<div class="warning">⚠️ 音频未播放，先播放音频</div>';
+                    await audio.play();
+                }
+                
+                // 创建AudioContext
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                resultDiv.innerHTML += `<div class="success">✅ AudioContext创建成功, 状态: ${audioContext.state}</div>`;
+                
+                // 创建源和分析器
+                const source = audioContext.createMediaElementSource(audio);
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                resultDiv.innerHTML += '<div class="success">✅ AudioContext连接成功</div>';
+                
+                // 测试频率数据
+                const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(frequencyData);
+                
+                resultDiv.innerHTML += `<div class="success">✅ 频率数据获取成功, 长度: ${frequencyData.length}</div>`;
+                
+                // 检查是否有实际数据
+                const hasData = Array.from(frequencyData).some(value => value > 0);
+                if (hasData) {
+                    resultDiv.innerHTML += '<div class="success">✅ 检测到音频频率数据</div>';
+                } else {
+                    resultDiv.innerHTML += '<div class="warning">⚠️ 未检测到音频频率数据（可能音频静音或未播放）</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ AudioContext测试失败: ${error.message}</div>`;
+                console.error('AudioContext错误详情:', error);
+            }
+        }
+        
+        async function testNetworkRequest() {
+            const resultDiv = document.getElementById('network-result');
+            resultDiv.innerHTML = '<div class="info">正在测试网络请求...</div>';
+            
+            try {
+                const startTime = performance.now();
+                
+                // 测试HEAD请求
+                const headResponse = await fetch(audioUrl, { method: 'HEAD' });
+                const headTime = performance.now() - startTime;
+                
+                resultDiv.innerHTML += `<div class="success">✅ HEAD请求成功: ${headResponse.status} (${headTime.toFixed(2)}ms)</div>`;
+                
+                // 测试部分GET请求
+                const partialStartTime = performance.now();
+                const partialResponse = await fetch(audioUrl, {
+                    headers: { 'Range': 'bytes=0-1023' }
+                });
+                const partialTime = performance.now() - partialStartTime;
+                
+                resultDiv.innerHTML += `<div class="success">✅ 部分GET请求成功: ${partialResponse.status} (${partialTime.toFixed(2)}ms)</div>`;
+                
+                // 检查Range支持
+                const acceptRanges = headResponse.headers.get('Accept-Ranges');
+                if (acceptRanges === 'bytes') {
+                    resultDiv.innerHTML += '<div class="success">✅ 服务器支持Range请求</div>';
+                } else {
+                    resultDiv.innerHTML += '<div class="warning">⚠️ 服务器不支持Range请求</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="error">❌ 网络请求失败: ${error.message}</div>`;
+            }
+        }
+        
+        // 页面加载时自动开始检查
+        window.addEventListener('load', () => {
+            console.log('调试页面加载完成');
+            setTimeout(checkCORS, 1000);
+        });
+    </script>
+</body>
+</html>
