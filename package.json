@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "python3 serve.py",
     "start": "python3 serve.py",
-    "build": "echo 'Static site - no build required'",
     "deploy": "vercel --prod"
   },
   "keywords": [

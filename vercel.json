@@ -1,6 +1,8 @@
 {
   "version": 2,
   "name": "moment-music-blog",
+  "buildCommand": "echo 'Static site ready'",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/assets/audio/(.*)",
