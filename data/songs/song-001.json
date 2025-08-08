@@ -1,8 +1,8 @@
 {
   "id": "song-001",
-  "title": "第061期 Wild",
-  "artist": "DJ思源版",
-  "audioSrc": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  "title": "再见吧，我最爱的你",
+  "artist": "东方晴儿",
+  "audioSrc": "assets/audio/song-001.mp3",
   "coverSrc": "https://picsum.photos/500/500?random=1",
   "backgroundSrc": "https://picsum.photos/1920/1080?random=1",
   "lyricsSrc": "assets/lyrics/song-001.txt"

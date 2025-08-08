@@ -2,8 +2,8 @@
   "id": "song-006",
   "title": "Time",
   "artist": "Pink Floyd",
-  "audioSrc": "assets/audio/time.mp3",
+  "audioSrc": "assets/audio/song-006.mp3",
   "coverSrc": "https://picsum.photos/500/500?random=3", 
-  "backgroundSrc": "assets/images/backgrounds/time.jpg",
-  "lyricsSrc": "assets/lyrics/time.txt"
+  "backgroundSrc": "assets/images/backgrounds/bg-006.jpg",
+  "lyricsSrc": "assets/lyrics/song-006.txt"
 }

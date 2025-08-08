@@ -1,0 +1,9 @@
+{
+  "id": "song-007",
+  "title": "上海滩",
+  "artist": "叶丽仪",
+  "audioSrc": "assets/audio/song-007.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=3", 
+  "backgroundSrc": "assets/images/backgrounds/bg-007.jpg",
+  "lyricsSrc": "assets/lyrics/song-007.txt"
+}
