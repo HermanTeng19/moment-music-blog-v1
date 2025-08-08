@@ -1,0 +1,9 @@
+{
+  "id": "song-010",
+  "title": "Don't Stop Me Now",
+  "artist": "Queen",
+  "audioSrc": "assets/audio/song-010.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=10",
+  "backgroundSrc": "assets/images/backgrounds/bg-010.jpg",
+  "lyricsSrc": "assets/lyrics/song-010.txt"
+}
