@@ -1,8 +1,8 @@
 {
   "id": "song-014",
-  "title": "New Song 14",
-  "artist": "Unknown Artist",
-  "audioSrc": "assets/audio/song-014.mp3",
+  "title": "Leaving Las Vegas",
+  "artist": "Sheryl Crow",
+  "audioSrc": "https://pub-c49ffc4b3aea4e53a775827f56c2c1ae.r2.dev/06%20Leaving%20Las%20Vegas.mp3",
   "backgroundSrc": "https://picsum.photos/1920/1080?random=14",
   "lyricsSrc": "assets/lyrics/song-014.txt"
 }

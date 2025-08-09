@@ -1,8 +1,8 @@
 {
   "id": "song-015",
-  "title": "New Song 15",
-  "artist": "Unknown Artist",
-  "audioSrc": "assets/audio/song-015.mp3",
+  "title": "Soak Up The Sun",
+  "artist": "Sheryl Crow",
+  "audioSrc": "https://pub-c49ffc4b3aea4e53a775827f56c2c1ae.r2.dev/02%20Soak%20Up%20the%20Sun.mp3",
   "backgroundSrc": "https://picsum.photos/1920/1080?random=15",
   "lyricsSrc": "assets/lyrics/song-015.txt"
 }
