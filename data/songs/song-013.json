@@ -1,0 +1,10 @@
+{
+  "id": "song-013",
+  "title": "New Song 13",
+  "artist": "Unknown Artist",
+  "audioSrc": "assets/audio/song-013.mp3",
+  "backgroundSrc": "https://picsum.photos/1920/1080?random=13",
+  "lyricsSrc": "assets/lyrics/song-013.txt"
+}
+
+
