@@ -385,13 +385,11 @@ input[type=range]::-moz-range-thumb {
     }
     .center-controls {
         justify-self: center;
-        min-width: 150px; /* 进一步收紧 */
+        min-width: 160px; /* 略收紧让两侧更靠近 */
         display: flex;
         align-items: center;
-        gap: 6px; /* 更靠近播放按钮 */
+        gap: 10px; /* 缩小间距让左右更靠近播放按钮 */
     }
-    /* 移除 Tailwind space-x-6 在移动端对子项的 margin 影响，改用 gap 控制 */
-    .center-controls > * { margin-right: 0 !important; }
     .right-controls {
         position: static !important; /* 覆盖 absolute */
         justify-self: end;
@@ -457,8 +455,7 @@ input[type=range]::-moz-range-thumb {
     }
 
     /* 更小屏幕进一步紧凑控制条 */
-    .center-controls { min-width: 136px; gap: 4px; }
-    .center-controls > * { margin-right: 0 !important; }
+    .center-controls { min-width: 150px; gap: 8px; }
     .left-controls, .right-controls { gap: 12px; }
     #play-pause-btn { width: 50px; height: 50px; }
     #play-icon, #pause-icon { width: 22px; height: 22px; }
