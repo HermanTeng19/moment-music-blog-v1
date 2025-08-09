@@ -1,0 +1,9 @@
+{
+  "id": "song-012",
+  "title": "Maggie May",
+  "artist": "Rod Stewart",
+  "audioSrc": "https://pub-c49ffc4b3aea4e53a775827f56c2c1ae.r2.dev/Maggie-May.mp3",
+  "coverSrc": "https://picsum.photos/500/500?random=11",
+  "backgroundSrc": "https://picsum.photos/1920/1080?random=12",
+  "lyricsSrc": "assets/lyrics/song-012.txt"
+}
