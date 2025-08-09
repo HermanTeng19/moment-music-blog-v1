@@ -385,10 +385,10 @@ input[type=range]::-moz-range-thumb {
     }
     .center-controls {
         justify-self: center;
-        min-width: 180px; /* 给中间三键留空间，防止被两侧挤压 */
+        min-width: 160px; /* 略收紧让两侧更靠近 */
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 10px; /* 缩小间距让左右更靠近播放按钮 */
     }
     .right-controls {
         position: static !important; /* 覆盖 absolute */
@@ -412,6 +412,12 @@ input[type=range]::-moz-range-thumb {
     /* 两侧图标略缩小，避免拥挤 */
     .left-controls button svg,
     .right-controls button svg {
+        width: 22px;
+        height: 22px;
+    }
+    /* 缩小上一首/下一首按钮图标尺寸 */
+    #prev-btn svg,
+    #next-btn svg {
         width: 22px;
         height: 22px;
     }
@@ -449,11 +455,12 @@ input[type=range]::-moz-range-thumb {
     }
 
     /* 更小屏幕进一步紧凑控制条 */
-    .center-controls { min-width: 160px; gap: 12px; }
+    .center-controls { min-width: 150px; gap: 8px; }
     .left-controls, .right-controls { gap: 12px; }
     #play-pause-btn { width: 50px; height: 50px; }
     #play-icon, #pause-icon { width: 22px; height: 22px; }
     .left-controls button svg, .right-controls button svg { width: 20px; height: 20px; }
+    #prev-btn svg, #next-btn svg { width: 20px; height: 20px; }
 }
 
 /* 播放模式相关样式 */
