@@ -71,9 +71,9 @@
         </div>
 
         <!-- 控制按钮区域 -->
-        <div class="flex items-center justify-between w-full px-6 sm:px-8 relative">
+        <div class="flex items-center justify-between w-full px-6 sm:px-8 relative controls-row">
             <!-- 左侧功能按钮 -->
-            <div class="flex items-center space-x-6 absolute left-8">
+            <div class="flex items-center space-x-6 absolute left-8 left-controls">
                 <button id="playlist-btn" class="text-white hover:text-gray-300 transition-colors" 
                         title="显示播放列表 (P)">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -89,7 +89,7 @@
             </div>
 
             <!-- 中间播放控制按钮 -->
-            <div class="flex items-center space-x-6 mx-auto">
+            <div class="flex items-center space-x-6 mx-auto center-controls">
                 <button id="prev-btn" class="text-white hover:text-gray-300 transition-colors" 
                         title="上一首 (←)">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
@@ -114,7 +114,7 @@
             </div>
 
             <!-- 右侧功能按钮 -->
-            <div class="flex items-center space-x-6 absolute right-8">
+            <div class="flex items-center space-x-6 absolute right-8 right-controls">
                 <button id="spectrum-toggle-btn" class="text-white hover:text-gray-300 transition-colors" title="开启/隐藏频谱 (S)">
                     <svg id="spectrum-on-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
