@@ -348,6 +348,20 @@ input[type=range]::-moz-range-thumb {
     .volume-container #volume-slider {
         width: 60px;
     }
+
+    /* 移动端优化：缩小左上/右上时间字体并与标题对齐 */
+    #current-time,
+    #total-duration {
+        font-size: 14px; /* 覆盖 text-3xl */
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+    }
+    
+    /* 适度缩小标题，保持同一视觉水平线 */
+    #song-title {
+        font-size: 22px; /* ~text-xl 到 text-2xl 之间 */
+        line-height: 1.25;
+    }
 }
 
 @media (max-width: 480px) {
@@ -366,6 +380,16 @@ input[type=range]::-moz-range-thumb {
     
     .playlist-item .song-artist {
         font-size: 12px;
+    }
+
+    /* 更小屏幕进一步缩小时间字体 */
+    #current-time,
+    #total-duration {
+        font-size: 12px;
+    }
+    /* 更小屏幕微调标题尺寸 */
+    #song-title {
+        font-size: 20px;
     }
 }
 
