@@ -44,6 +44,12 @@ body {
     pointer-events: none; /* 容器不拦截事件，让点击穿透到进度条 */
 }
 
+/* 确保时间标签可以被脚本动态定位 */
+#current-time,
+#total-duration {
+    position: absolute;
+}
+
 /* 确保歌词按钮可以接收事件 */
 #player-content button {
     pointer-events: auto;

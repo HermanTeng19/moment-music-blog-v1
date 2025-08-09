@@ -137,6 +137,32 @@ class MusicPlayer {
     }
 
     /**
+     * 将左上角当前时间与右上角总时长，垂直居中对齐到标题行
+     */
+    updateTimeLabelsPosition() {
+        try {
+            if (!this.songTitleEl || !this.currentTimeEl || !this.totalDurationEl) return;
+
+            const titleRect = this.songTitleEl.getBoundingClientRect();
+            const container = document.getElementById('player-content');
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+
+            // 计算使时间文本垂直居中于标题的 top 值
+            const currentRect = this.currentTimeEl.getBoundingClientRect();
+            const totalRect = this.totalDurationEl.getBoundingClientRect();
+
+            const targetTop = (titleRect.top - containerRect.top) + (titleRect.height - currentRect.height) / 2;
+
+            // 应用到两个时间标签
+            this.currentTimeEl.style.top = `${Math.max(0, targetTop)}px`;
+            this.totalDurationEl.style.top = `${Math.max(0, targetTop)}px`;
+        } catch (err) {
+            console.warn('对齐时间标签失败:', err);
+        }
+    }
+
+    /**
      * 初始化播放器，加载数据
      */
     async initialize() {
@@ -180,6 +206,9 @@ class MusicPlayer {
 
         // 初始化全屏遮罩尺寸
         this.setupProgressWaveCanvas();
+
+        // 初始化时对齐一次时间标签
+        this.updateTimeLabelsPosition();
     }
 
     /**
@@ -219,6 +248,9 @@ class MusicPlayer {
             
             // 更新歌词
             this.lyricsContent.textContent = song.lyrics || '暂无歌词';
+
+            // 更新布局对齐
+            this.updateTimeLabelsPosition();
             
             // 尝试自动播放（如果用户已经与页面交互过）
             if (this.isPlaying) {
@@ -396,6 +428,8 @@ class MusicPlayer {
         if (this.audioPlayer.duration) {
             this.totalDurationEl.textContent = this.formatTime(this.audioPlayer.duration);
         }
+        // 元数据加载后重新对齐时间标签
+        this.updateTimeLabelsPosition();
     }
 
     /**
@@ -1279,6 +1313,7 @@ class MusicPlayer {
             this.setupCanvas();
         }
         this.setupProgressWaveCanvas();
+        this.updateTimeLabelsPosition();
     }
 }
 
